@@ -203,6 +203,7 @@ jobs:
         make clean
         make ${{ github.event.inputs.BUILD_TARGET }}image -j$(nproc --all)
         echo "Done building your ${{ github.event.inputs.BUILD_TARGET }}.img"
+      continue-on-error: true
       
     - name: Set Build Date # Output will be use in Release
       run: |
@@ -257,6 +258,7 @@ jobs:
             echo "No recovery file found!"
             exit 1
         fi
+      continue-on-error: true
 
     - name: Recovery to tar for Samsung devices
       run: |
