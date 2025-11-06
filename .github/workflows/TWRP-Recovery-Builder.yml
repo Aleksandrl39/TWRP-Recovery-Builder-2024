@@ -16,23 +16,23 @@ on:
       DEVICE_TREE:
         description: 'Custom Recovery Tree' 
         required: true
-        default: 'https://github.com/kinguser981/cap_sprout_twrp'
+        default: 'https://github.com/Aleksandrl39/Infinix-X663_device_tree_firmware_670'
       DEVICE_TREE_BRANCH:
         description: 'Custom Recovery Tree Branch' 
         required: true
-        default: 'android-12.1'
+        default: 'main'
       DEVICE_PATH:
         description: 'Specify your Device Path' 
         required: true
-        default: 'device/nokia/cap_sprout'
+        default: 'device/infinix/Infinix_X663'
       DEVICE_NAME:
         description: 'Specify your Device Codename' 
         required: true
-        default: 'cap_sprout'
+        default: 'Infinix_X663'
       BUILD_TARGET:
         description: 'Specify your Build Target' 
         required: true
-        default: 'recovery'
+        default: 'boot'
         type: choice
         options:
         - boot
@@ -41,7 +41,7 @@ on:
       LDCHECK:
         description: 'Path of blobs to check' 
         required: true
-        default: 'system/bin/qseecomd'
+        default: 'vendor/bin/tee'
       RECOVERY_TAR:
         description: 'Release Recovery.tar For Samsung devices'
         required: false
@@ -51,7 +51,7 @@ on:
         description: 'Include recovery installer.zip'
         type: boolean
         required: true
-        default: true
+        default: false
 jobs:
   build:
     name: Build TWRP by ${{ github.actor }}
@@ -130,6 +130,35 @@ jobs:
         git clone ${{ github.event.inputs.DEVICE_TREE }} -b ${{ github.event.inputs.DEVICE_TREE_BRANCH }} ./${{ github.event.inputs.DEVICE_PATH }}
         cd ${{ github.event.inputs.DEVICE_PATH }}
         echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
+    - name: Rename Makefiles
+      run: |
+        cd workspace/${{ github.event.inputs.DEVICE_PATH }}
+        
+        # Переименовываем файлы с тире
+        if [ -f "omni_Infinix-X663.mk" ]; then
+          mv "omni_Infinix-X663.mk" "omni_Infinix_X663.mk"
+        fi
+        if [ -f "twrp_Infinix-X663.mk" ]; then
+          mv "twrp_Infinix-X663.mk" "twrp_Infinix_X663.mk"
+        fi
+        
+        echo "Makefiles renamed"
+      continue-on-error: true
+
+    - name: Fix Dashes in Device Tree
+      run: |
+        cd workspace/${{ github.event.inputs.DEVICE_PATH }}
+        echo "Fixing dashes in device tree..."
+        
+        # Заменяем ВСЕ вхождения Infinix-X663 на Infinix_X663
+        find . -type f \( -name "*.mk" -o -name "*.sh" -o -name "*.bp" \) -exec sed -i 's/Infinix-X663/Infinix_X663/g' {} \;
+        
+        # Также исправляем в путях
+        find . -type f \( -name "*.mk" -o -name "*.sh" -o -name "*.bp" \) -exec sed -i 's|device/infinix/Infinix-X663|device/infinix/Infinix_X663|g' {} \;
+        
+        echo "Dashes fixed successfully"
+      continue-on-error: true
 
     - name: Check Build Makefile
       run: |
