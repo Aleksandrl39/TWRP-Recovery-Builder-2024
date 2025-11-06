@@ -234,15 +234,6 @@ jobs:
             exit 1
         fi
 
-        - name: Include Recovery Installer
-      run: |
-        if [ ${{ github.event.inputs.RECOVERY_INSTALLER }} = true ]; then
-          cd workspace/out/target/product/${{ env.ACTUAL_DEVICE_DIR }}
-          wget https://github.com/kinguser981/recovery-installer/releases/download/zip/recovery-installer.zip
-          zip -ur recovery-installer.zip ${{ env.RECOVERY_TYPE }}.img
-        fi
-      continue-on-error: true
-        
     - name: Recovery to tar for Samsung devices
       run: |
         if [ ${{ github.event.inputs.RECOVERY_TAR }} = true ]; then
