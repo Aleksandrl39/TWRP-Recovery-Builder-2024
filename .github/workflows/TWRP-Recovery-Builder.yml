@@ -136,19 +136,6 @@ jobs:
         cd ${{ github.event.inputs.DEVICE_PATH }}
         echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
-    - name: Fix Dashes in Device Tree
-      run: |
-        cd workspace/${{ github.event.inputs.DEVICE_PATH }}
-        echo "Fixing dashes in device tree..."
-        
-        # Заменяем ВСЕ вхождения Infinix-X663 на Infinix_X663
-        find . -type f \( -name "*.mk" -o -name "*.sh" -o -name "*.bp" \) -exec sed -i 's/Infinix-X663/Infinix_X663/g' {} \;
-        
-        # Также исправляем в путях
-        find . -type f \( -name "*.mk" -o -name "*.sh" -o -name "*.bp" \) -exec sed -i 's|device/infinix/Infinix-X663|device/infinix/Infinix_X663|g' {} \;
-        
-        echo "Dashes fixed successfully"
-
     - name: Check Build Makefile
       run: |
         cd workspace
