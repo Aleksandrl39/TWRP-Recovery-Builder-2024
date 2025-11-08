@@ -16,23 +16,23 @@ on:
       DEVICE_TREE:
         description: 'Custom Recovery Tree' 
         required: true
-        default: 'https://github.com/Aleksandrl39/Infinix-X663_device_tree_firmware_670'
+        default: 'https://github.com/kinguser981/cap_sprout_twrp'
       DEVICE_TREE_BRANCH:
         description: 'Custom Recovery Tree Branch' 
         required: true
-        default: 'main'
+        default: 'android-12.1'
       DEVICE_PATH:
         description: 'Specify your Device Path' 
         required: true
-        default: 'device/infinix/Infinix_X663'
+        default: 'device/nokia/cap_sprout'
       DEVICE_NAME:
         description: 'Specify your Device Codename' 
         required: true
-        default: 'Infinix_X663'
+        default: 'cap_sprout'
       BUILD_TARGET:
         description: 'Specify your Build Target' 
         required: true
-        default: 'boot'
+        default: 'recovery'
         type: choice
         options:
         - boot
@@ -41,7 +41,7 @@ on:
       LDCHECK:
         description: 'Path of blobs to check' 
         required: true
-        default: 'vendor/bin/tee'
+        default: 'system/bin/qseecomd'
       RECOVERY_TAR:
         description: 'Release Recovery.tar For Samsung devices'
         required: false
@@ -51,7 +51,7 @@ on:
         description: 'Include recovery installer.zip'
         type: boolean
         required: true
-        default: false
+        default: true
 jobs:
   build:
     name: Build TWRP by ${{ github.actor }}
@@ -81,11 +81,11 @@ jobs:
 
     - name: Cleanup
       uses: rokibhasansagar/slimhub_actions@main
-
+      
     - name: Set Swap Space
       uses: pierotofy/set-swap-space@master
       with:
-        swap-size-gb: 8
+        swap-size-gb: 24
         
     - name: Prepare the environment
       run: |
@@ -136,21 +136,6 @@ jobs:
         cd ${{ github.event.inputs.DEVICE_PATH }}
         echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
-    - name: Rename Makefiles
-      run: |
-        cd workspace/${{ github.event.inputs.DEVICE_PATH }}
-        
-        # Переименовываем файлы с тире
-        if [ -f "omni_Infinix-X663.mk" ]; then
-          mv "omni_Infinix-X663.mk" "omni_Infinix_X663.mk"
-        fi
-        if [ -f "twrp_Infinix-X663.mk" ]; then
-          mv "twrp_Infinix-X663.mk" "twrp_Infinix_X663.mk"
-        fi
-        
-        echo "Makefiles renamed"
-      continue-on-error: true
-
     - name: Fix Dashes in Device Tree
       run: |
         cd workspace/${{ github.event.inputs.DEVICE_PATH }}
@@ -163,39 +148,19 @@ jobs:
         find . -type f \( -name "*.mk" -o -name "*.sh" -o -name "*.bp" \) -exec sed -i 's|device/infinix/Infinix-X663|device/infinix/Infinix_X663|g' {} \;
         
         echo "Dashes fixed successfully"
-      continue-on-error: true
 
     - name: Check Build Makefile
       run: |
         cd workspace
-        # Экранируем тире в имени устройства
-        DEVICE_NAME_ESCAPED="${{ github.event.inputs.DEVICE_NAME }}"
-        # Пробуем разные варианты именования
-        if [ -f "${{ github.event.inputs.DEVICE_PATH }}/twrp_${DEVICE_NAME_ESCAPED}.mk" ]; then
+        if [ -f ${{ github.event.inputs.DEVICE_PATH }}/twrp_${{ github.event.inputs.DEVICE_NAME}}.mk ]; then
             echo "DEVICE_MAKEFILE=twrp_${{ github.event.inputs.DEVICE_NAME }}" >> $GITHUB_ENV
-        elif [ -f "${{ github.event.inputs.DEVICE_PATH }}/omni_${DEVICE_NAME_ESCAPED}.mk" ]; then
+        elif [ -f ${{ github.event.inputs.DEVICE_PATH }}/omni_${{ github.event.inputs.DEVICE_NAME}}.mk ]; then
             echo "DEVICE_MAKEFILE=omni_${{ github.event.inputs.DEVICE_NAME }}" >> $GITHUB_ENV
-        elif [ -f "${{ github.event.inputs.DEVICE_PATH }}/twrp_${DEVICE_NAME_ESCAPED//-/_}.mk" ]; then
-            echo "DEVICE_MAKEFILE=twrp_${DEVICE_NAME_ESCAPED//-/_}" >> $GITHUB_ENV
-        elif [ -f "${{ github.event.inputs.DEVICE_PATH }}/omni_${DEVICE_NAME_ESCAPED//-/_}.mk" ]; then
-            echo "DEVICE_MAKEFILE=omni_${DEVICE_NAME_ESCAPED//-/_}" >> $GITHUB_ENV
         else
-            echo "No recovery makefile found! Available files:"
-            ls -la ${{ github.event.inputs.DEVICE_PATH }}/*.mk || true
-            exit 1
+            echo "No recovery makefile file found!"
         fi
       continue-on-error: true
-
-    - name: Fix Boot Control HAL Conflict
-      run: |
-        cd workspace/${{ github.event.inputs.DEVICE_PATH }}
-        
-        # Комментируем статический HAL, оставляем только динамический
-        sed -i '/PRODUCT_STATIC_BOOT_CONTROL_HAL/,/^[^#]/ s/^/# /' device.mk
-        sed -i 's/^PRODUCT_STATIC_BOOT_CONTROL_HAL/# PRODUCT_STATIC_BOOT_CONTROL_HAL/' device.mk
-        
-        echo "Boot Control HAL conflict resolved"
-  
+      
     - name: Install Python 2
       if: github.event.inputs.MANIFEST_BRANCH != 'twrp-11' && github.event.inputs.MANIFEST_BRANCH != 'twrp-12.1'  && github.event.inputs.MANIFEST_BRANCH != 'twrp-14'
       run: |
@@ -208,17 +173,8 @@ jobs:
         cd workspace
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
-        
-        # Экранируем имя устройства с тире
-        LUNCH_TARGET="${{ env.DEVICE_MAKEFILE }}-eng"
-        echo "Lunch target: $LUNCH_TARGET"
-        
-        # Используем кавычки для lunch команды
-        lunch "$LUNCH_TARGET" 
-        make clean
-        make ${{ github.event.inputs.BUILD_TARGET }}image -j$(nproc --all)
+        lunch ${{ env.DEVICE_MAKEFILE }}-eng && make clean && make ${{ github.event.inputs.BUILD_TARGET }}image -j$(nproc --all)
         echo "Done building your ${{ github.event.inputs.BUILD_TARGET }}.img"
-      continue-on-error: true
       
     - name: Set Build Date # Output will be use in Release
       run: |
@@ -231,54 +187,37 @@ jobs:
 
     - name: Check if Recovery Exist
       run: |
-        cd workspace/out/target/product
-        
-        # Находим фактическую папку с устройством (может отличаться из-за тире)
-        ACTUAL_DEVICE_DIR="${{ github.event.inputs.DEVICE_NAME }}"
-        if [ ! -d "$ACTUAL_DEVICE_DIR" ]; then
-          # Пробуем найти папку с заменой тире на подчеркивание
-          ALT_DEVICE_DIR="${ACTUAL_DEVICE_DIR//-/_}"
-          if [ -d "$ALT_DEVICE_DIR" ]; then
-            ACTUAL_DEVICE_DIR="$ALT_DEVICE_DIR"
-            echo "Using alternative device directory: $ACTUAL_DEVICE_DIR"
-          else
-            echo "Available device directories:"
-            ls -la
-            echo "Device directory '$ACTUAL_DEVICE_DIR' not found!"
-            exit 1
-          fi
-        fi
-        
-        cd "$ACTUAL_DEVICE_DIR"
-        
-        # Проверяем существующие образы
-        if [ -f "recovery.img" ]; then
+        cd workspace
+        if [ -f out/target/product/${{ github.event.inputs.DEVICE_NAME }}/recovery.img ]; then
             echo "RECOVERY_TYPE=recovery" >> $GITHUB_ENV
-            echo "ACTUAL_DEVICE_DIR=$ACTUAL_DEVICE_DIR" >> $GITHUB_ENV
             echo "recovery.img file found!"
-            echo "MD5_IMG=$(md5sum recovery.img | cut -d ' ' -f 1)" >> $GITHUB_ENV
-        elif [ -f "boot.img" ]; then
+            echo "MD5_IMG=$(md5sum out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_TARGET }}.img | cut -d ' ' -f 1)" >> $GITHUB_ENV
+        elif [ -f out/target/product/${{ github.event.inputs.DEVICE_NAME }}/boot.img ]; then
             echo "RECOVERY_TYPE=boot" >> $GITHUB_ENV
-            echo "ACTUAL_DEVICE_DIR=$ACTUAL_DEVICE_DIR" >> $GITHUB_ENV
             echo "boot.img file found!"
-            echo "MD5_IMG=$(md5sum boot.img | cut -d ' ' -f 1)" >> $GITHUB_ENV
-        elif [ -f "vendor_boot.img" ]; then
+            echo "MD5_IMG=$(md5sum out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_TARGET }}.img | cut -d ' ' -f 1)" >> $GITHUB_ENV
+        elif [ -f out/target/product/${{ github.event.inputs.DEVICE_NAME }}/vendor_boot.img ]; then
             echo "RECOVERY_TYPE=vendor_boot" >> $GITHUB_ENV
-            echo "ACTUAL_DEVICE_DIR=$ACTUAL_DEVICE_DIR" >> $GITHUB_ENV
             echo "vendor_boot.img file found!"
-            echo "MD5_IMG=$(md5sum vendor_boot.img | cut -d ' ' -f 1)" >> $GITHUB_ENV
+            echo "MD5_IMG=$(md5sum out/target/product/${{ github.event.inputs.DEVICE_NAME }}/vendor_boot.img | cut -d ' ' -f 1)" >> $GITHUB_ENV
         else
-            echo "Available files:"
-            ls -la *.img || true
-            echo "No recovery file found!"
-            exit 1
+            echo "No Recovery file found!"
+            cd Exit
+        fi
+
+    - name: Include Recovery Installer
+      run: |
+        if [ ${{ github.event.inputs.RECOVERY_INSTALLER }} = true ]; then
+          cd workspace/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/
+          wget https://github.com/kinguser981/recovery-installer/releases/download/zip/recovery-installer.zip
+          zip -ur recovery-installer.zip ${{ env.RECOVERY_TYPE }}.img
         fi
       continue-on-error: true
-
+        
     - name: Recovery to tar for Samsung devices
       run: |
         if [ ${{ github.event.inputs.RECOVERY_TAR }} = true ]; then
-          cd workspace/out/target/product/${{ env.ACTUAL_DEVICE_DIR }}
+          cd workspace/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/
           tar -cvf ${{ env.RECOVERY_TYPE }}.tar ${{ env.RECOVERY_TYPE }}.img
         fi
       continue-on-error: true
@@ -287,24 +226,27 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          workspace/out/target/product/${{ env.ACTUAL_DEVICE_DIR }}/${{ env.RECOVERY_TYPE }}.tar
-          workspace/out/target/product/${{ env.ACTUAL_DEVICE_DIR }}/recovery-installer.zip
-          workspace/out/target/product/${{ env.ACTUAL_DEVICE_DIR }}/${{ env.RECOVERY_TYPE }}.img
+          workspace/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ env.RECOVERY_TYPE }}.tar
+          workspace/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/recovery-installer.zip
+          workspace/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ env.RECOVERY_TYPE }}.img
         name: Unofficial TWRP for ${{ github.event.inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
         tag_name: ${{ github.run_id }}
         body: |
-          Device: ${{ github.event.inputs.DEVICE_NAME }}
-          Build Type: ${{ env.RECOVERY_TYPE }}.img
-          MD5: ${{ env.MD5_IMG }}
 
     - name: Release ramdisk-recovery
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@4634c16e79c963813287e889244c50009e7f0981
       with:
         files: |
-          workspace/out/target/product/${{ env.ACTUAL_DEVICE_DIR }}/obj/PACKAGING/vendor_ramdisk_fragments_intermediates/recovery.*
-          workspace/out/target/product/${{ env.ACTUAL_DEVICE_DIR }}/ramdisk-recovery.*
-        name: Ramdisk files for ${{ github.event.inputs.DEVICE_NAME }}
-        tag_name: ramdisk-${{ github.run_id }}
+          workspace/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/obj/PACKAGING/vendor_ramdisk_fragments_intermediates/recovery.*
+          workspace/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/ramdisk-recovery.*
+        name: Unofficial TWRP for ${{ github.event.inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
+        tag_name: ${{ github.run_id }}
+        body: |
+          Manifest: ${{ github.event.inputs.MANIFEST_BRANCH }}
+          Target: ${{ github.event.inputs.BUILD_TARGET}}.img
+          Device: [Device Tree/Branch](${{ env.DEVICE_TREE_URL }}/${{ github.eventinputs.DEVICE_TREE_BRANCH }})
+          Commit: Most recent [commit](${{ env.DEVICE_TREE_URL }}/commit/${{ env.COMMIT_ID }}) during building.
+          MD5 (img): ${{ env.MD5_IMG }}
           
     - name: Checking For Missing Dependencies
       run: |
