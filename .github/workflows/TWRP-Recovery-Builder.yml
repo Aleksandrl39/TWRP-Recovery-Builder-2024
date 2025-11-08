@@ -16,23 +16,23 @@ on:
       DEVICE_TREE:
         description: 'Custom Recovery Tree' 
         required: true
-        default: 'https://github.com/kinguser981/cap_sprout_twrp'
+        default: 'https://github.com/Aleksandrl39/Infinix-X663_device_tree_firmware_402/tree/main'
       DEVICE_TREE_BRANCH:
         description: 'Custom Recovery Tree Branch' 
         required: true
-        default: 'android-12.1'
+        default: 'main'
       DEVICE_PATH:
         description: 'Specify your Device Path' 
         required: true
-        default: 'device/nokia/cap_sprout'
+        default: 'device/infinix/Infinix-X663'
       DEVICE_NAME:
         description: 'Specify your Device Codename' 
         required: true
-        default: 'cap_sprout'
+        default: 'Infinix-X663'
       BUILD_TARGET:
         description: 'Specify your Build Target' 
         required: true
-        default: 'recovery'
+        default: 'boot'
         type: choice
         options:
         - boot
@@ -41,7 +41,7 @@ on:
       LDCHECK:
         description: 'Path of blobs to check' 
         required: true
-        default: 'system/bin/qseecomd'
+        default: 'vendor/bin/tee'
       RECOVERY_TAR:
         description: 'Release Recovery.tar For Samsung devices'
         required: false
@@ -50,8 +50,8 @@ on:
       RECOVERY_INSTALLER:
         description: 'Include recovery installer.zip'
         type: boolean
-        required: true
-        default: true
+        required: false
+        default: false
 jobs:
   build:
     name: Build TWRP by ${{ github.actor }}
@@ -152,9 +152,9 @@ jobs:
     - name: Check Build Makefile
       run: |
         cd workspace
-        if [ -f ${{ github.event.inputs.DEVICE_PATH }}/twrp_${{ github.event.inputs.DEVICE_NAME}}.mk ]; then
+        if [ -f ${{ github.event.inputs.DEVICE_PATH }}/twrp_${{ github.event.inputs.DEVICE_NAME }}.mk ]; then
             echo "DEVICE_MAKEFILE=twrp_${{ github.event.inputs.DEVICE_NAME }}" >> $GITHUB_ENV
-        elif [ -f ${{ github.event.inputs.DEVICE_PATH }}/omni_${{ github.event.inputs.DEVICE_NAME}}.mk ]; then
+        elif [ -f ${{ github.event.inputs.DEVICE_PATH }}/omni_${{ github.event.inputs.DEVICE_NAME }}.mk ]; then
             echo "DEVICE_MAKEFILE=omni_${{ github.event.inputs.DEVICE_NAME }}" >> $GITHUB_ENV
         else
             echo "No recovery makefile file found!"
@@ -243,7 +243,7 @@ jobs:
         tag_name: ${{ github.run_id }}
         body: |
           Manifest: ${{ github.event.inputs.MANIFEST_BRANCH }}
-          Target: ${{ github.event.inputs.BUILD_TARGET}}.img
+          Target: ${{ github.event.inputs.BUILD_TARGET }}.img
           Device: [Device Tree/Branch](${{ env.DEVICE_TREE_URL }}/${{ github.eventinputs.DEVICE_TREE_BRANCH }})
           Commit: Most recent [commit](${{ env.DEVICE_TREE_URL }}/commit/${{ env.COMMIT_ID }}) during building.
           MD5 (img): ${{ env.MD5_IMG }}
