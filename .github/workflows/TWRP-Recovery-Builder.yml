@@ -16,7 +16,7 @@ on:
       DEVICE_TREE:
         description: 'Custom Recovery Tree' 
         required: true
-        default: 'https://github.com/Aleksandrl39/Infinix-X663_device_tree_firmware_402/tree/main'
+        default: 'https://github.com/Aleksandrl39/Infinix-X663_device_tree_firmware_402'
       DEVICE_TREE_BRANCH:
         description: 'Custom Recovery Tree Branch' 
         required: true
