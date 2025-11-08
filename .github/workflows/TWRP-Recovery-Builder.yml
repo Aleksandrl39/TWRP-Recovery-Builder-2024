@@ -24,11 +24,11 @@ on:
       DEVICE_PATH:
         description: 'Specify your Device Path' 
         required: true
-        default: 'device/infinix/Infinix-X663'
+        default: 'device/infinix/Infinix_X663'
       DEVICE_NAME:
         description: 'Specify your Device Codename' 
         required: true
-        default: 'Infinix-X663'
+        default: 'Infinix_X663'
       BUILD_TARGET:
         description: 'Specify your Build Target' 
         required: true
