@@ -6,7 +6,7 @@ on:
       MANIFEST_BRANCH:
         description: 'TWRP Minimal-Manifest Branch'
         required: true
-        default: ''
+        default: 'twrp-12.1'
         type: choice
         options:
         - twrp-14.1
@@ -16,7 +16,7 @@ on:
       DEVICE_TREE:
         description: 'Custom Recovery Tree' 
         required: true
-        default: 'https://github.com/Aleksandrl39/Infinix-X663_device_tree_firmware_402'
+        default: 'https://github.com/Aleksandrl39/Infinix-X663_device_tree_Nova'
       DEVICE_TREE_BRANCH:
         description: 'Custom Recovery Tree Branch' 
         required: true
@@ -24,11 +24,11 @@ on:
       DEVICE_PATH:
         description: 'Specify your Device Path' 
         required: true
-        default: 'device/infinix/Infinix_X663'
+        default: 'device/Infinix/X663'
       DEVICE_NAME:
         description: 'Specify your Device Codename' 
         required: true
-        default: 'Infinix_X663'
+        default: 'X663'
       BUILD_TARGET:
         description: 'Specify your Build Target' 
         required: true
@@ -51,7 +51,7 @@ on:
         description: 'Include recovery installer.zip'
         type: boolean
         required: false
-        default: false
+        default: true
 jobs:
   build:
     name: Build TWRP by ${{ github.actor }}
