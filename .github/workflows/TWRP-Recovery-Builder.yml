@@ -120,7 +120,7 @@ jobs:
       run: |
         mkdir workspace
         cd workspace
-        git config --global user.name "Aleksandrl39"
+        git config --global user.name "Samuel Kendall"
         git config --global user.email "kinguser981@gmail.com"
         repo init --depth=1 -u ${{ steps.manifest.outputs.value }} -b ${{ github.event.inputs.MANIFEST_BRANCH }}
   
